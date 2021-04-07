@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 
 public class NimServer implements ViewListener {
 
@@ -68,22 +69,27 @@ public class NimServer implements ViewListener {
     }
 
     @Override
-    public void moveRequest(int pn, int sp, int np) {
+    public void join(ModelListener view, String username) {
 
     }
 
     @Override
-    public void newGame() {
+    public void moveRequest(ModelListener view, int pn, int sp, int np) {
 
     }
 
     @Override
-    public void quit() {
+    public void newGame(ModelListener view, ArrayList<Integer> piles) {
 
     }
 
     @Override
-    public void help() {
+    public void quit(ModelListener view) {
+
+    }
+
+    @Override
+    public void help(ModelListener view) {
 
     }
 }
