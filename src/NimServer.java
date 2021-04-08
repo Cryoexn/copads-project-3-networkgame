@@ -61,8 +61,6 @@ public class NimServer {
                 // Display the starting values of piles when the game starts.
                 displayPiles(piles);
 
-                verbose = Boolean.parseBoolean(args[2]);
-
                 NimModel model = null;
 
                 while (true) {
@@ -139,7 +137,7 @@ public class NimServer {
             }
         }
 
-        return initPiles(0, args);
+        return initPiles(args.length, args);
 
     } // end processArgs.
 
