@@ -21,7 +21,7 @@ import java.util.ArrayList;
 public class NimServer {
 
     // If the verbose option was specified.
-    static boolean verbose;
+    public static boolean verbose;
 
     /**
      * Accept clients connections, and start games when two clients connect.
@@ -40,13 +40,13 @@ public class NimServer {
             ArrayList<Integer> piles;
 
             // Set the default of verbose to off.
-            boolean verbose = false;
+            verbose = false;
 
             try {
 
                 // Create new ServerSocket.
                 ServerSocket serverSocket = new ServerSocket();
-
+                
                 // Get host and port from commandline arguments.
                 String host = args[0];
                 int port = Integer.parseInt(args[1]);
@@ -87,7 +87,7 @@ public class NimServer {
                 }
 
             } catch (IOException | NumberFormatException ex) {
-                System.err.println("Error Initial: " + ex.getMessage());
+                System.err.println("Error: " + ex.getMessage());
                 usage();
             }
         }
@@ -123,7 +123,7 @@ public class NimServer {
     public static ArrayList<Integer> processArgs(String[] args)
             throws NumberFormatException {
 
-        if(args.length != 2) {
+        if(args.length > 2) {
             if(args[2].equals("true")){
 
                 // Verbose option is set.
