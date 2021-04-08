@@ -13,30 +13,16 @@ import java.util.Arrays;
 /**
  * State of the game. Used by NimModel to change the state of
  * the game based on players actions.
+ *
+ * @author David Pitoniak dhp6397@rit.edu
  */
 public class GameState {
 
     // Piles being used in the game.
     private ArrayList<Integer> piles;
 
-    public final ArrayList<Integer> INITIAL_PILES;
-
-    /**
-     * Default Constructor to initialize the game.
-     */
-    public GameState() {
-
-        this.piles = new ArrayList<>();
-
-        // Initialize Default game.
-        piles.add(3);
-        piles.add(4);
-        piles.add(5);
-
-        // Set the initial piles to the starting piles.
-        INITIAL_PILES = new ArrayList<>(piles);
-
-    } // end GameState.
+    // Initial piles for new games.
+    public ArrayList<Integer> INITIAL_PILES;
 
     /**
      * Constructor to initialize the game with the
@@ -46,6 +32,7 @@ public class GameState {
      */
     public GameState(ArrayList<Integer> piles) {
 
+        // Set start game state.
         this.piles = piles;
 
         // Set the initial piles to the starting piles.
@@ -74,6 +61,16 @@ public class GameState {
     } // end setPiles.
 
     /**
+     * Initialize game states.
+     */
+    public void setInitialPiles(ArrayList<Integer> piles) {
+
+        this.piles = piles;
+        this.INITIAL_PILES = new ArrayList<>(piles);
+
+    } // end setInitialPiles
+
+    /**
      * Update the piles based on the move passed in.
      *
      * @param i pile index ( 0 based ).
@@ -82,7 +79,8 @@ public class GameState {
      */
     public void updatePiles(int i, int j, int val) {
 
-        updatePile(this.piles.get(i), i, j, val);
+        // Update the pile at specified pile index.
+        updatePile(i, this.piles.get(i), j, val);
 
     } // end updatePile.
 
@@ -90,31 +88,44 @@ public class GameState {
      * Called by update piles to update a pile according to move.
      *
      * @param num number of pins.
-     * @param pileIndex index of pile being updated.
-     * @param i pile index ( 0 based ).
-     * @param j start pin index ( 0 based ).
+     * @param i start pin index ( 0 based ).
+     * @param j number to remove ( 0 based ).
      */
-    private void updatePile(int num, int pileIndex, int i, int j) {
+    private void updatePile(int pileIndex, int num, int i, int j) {
+
+        // Array to represent the pins in a pile.
         int[] pins = new int[num];
 
+        // Fill the array with "pins".
         Arrays.fill(pins, 1);
 
-        for (; i < j; i++) {
-            pins[i] = 0;
+        // Remove the specified "pins".
+        for(int index = i; index < j+i; index++) {
+            pins[index]=0;
         }
 
         int pinCount = 0;
         int count = 0;
 
+        // Remove the original pile from the piles.
+        this.piles.remove(pileIndex);
+
+        // Update the new piles.
         for (int pin : pins) {
             if (pin == 1) {
                 pinCount++;
             } else {
-                this.piles.set(pileIndex + count, pinCount);
+                this.piles.add(pileIndex + count, pinCount);
                 count++;
                 pinCount = 0;
             }
         }
+
+        // Add last pile into the piles.
+        this.piles.add(pileIndex + count, pinCount);
+
+        // Remove the empty piles.
+        piles.removeIf(filter -> filter == 0);
 
     } // end updatePiles.
 
@@ -138,15 +149,13 @@ public class GameState {
 
         StringBuilder sb = new StringBuilder();
 
-        for (Integer i : piles) {
+        for (Integer pinNum : piles) {
             sb.append(" ");
-            sb.append(i);
+            sb.append(pinNum);
         }
 
-        // Remove the last space from string.
-        //sb.replace(sb.length() - 1, sb.length(), "");
-
         return sb.toString();
-    }
+
+    } // end toString.
 
 } // end GameState.

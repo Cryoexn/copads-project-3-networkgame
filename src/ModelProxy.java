@@ -14,7 +14,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 /**
- *
+ * Proxy for NimView to communicate with NimModel.
  *
  * @author David Pitoniak dhp6397@rit.edu
  */
@@ -31,13 +31,14 @@ public class ModelProxy implements ViewListener {
     private ModelListener listener;
 
     /**
+     * Constructor.
      *
      * @param socket client socket.
      */
     public ModelProxy(Socket socket) {
 
+        // Try to initialize client in and out streams.
         try {
-
             this.socket = socket;
 
             socket.setTcpNoDelay(true);
@@ -46,11 +47,21 @@ public class ModelProxy implements ViewListener {
             in = new DataInputStream(socket.getInputStream());
 
         } catch (IOException e) {
+            try {
+                socket.close();
+            } catch (IOException ioException) {
+                handleErrorMessage(ioException.getMessage());
+            }
             handleErrorMessage(e.getMessage());
         }
 
     } // end ModelProxy Constructor.
 
+    /**
+     * Set the listener for communication with View.
+     *
+     * @param listener listener for View.
+     */
     public void setListener(ModelListener listener) {
 
         // Set the listener to update on messages.
@@ -102,19 +113,11 @@ public class ModelProxy implements ViewListener {
     }
 
     @Override
-    public void newGame(ModelListener view, ArrayList<Integer> piles) {
+    public void newGame(ModelListener view) {
 
         try {
             // Write out the header Byte of 'N' for New Game.
             out.writeByte('N');
-
-            // Write out all piles.
-            for(Integer i : piles) {
-                out.writeByte(i);
-            }
-
-            // Signal that the pile is finished.
-            out.writeByte(-1);
 
             // Flush the output.
             out.flush();
@@ -143,7 +146,16 @@ public class ModelProxy implements ViewListener {
 
     @Override
     public void help(ModelListener view) {
+        try {
+            // Write out the header Byte of 'H' for help.
+            out.writeByte('H');
 
+            // Flush the output.
+            out.flush();
+
+        } catch (IOException e) {
+            handleErrorMessage(e.getMessage());
+        }
     } // end help.
 
     /**
@@ -161,50 +173,74 @@ public class ModelProxy implements ViewListener {
 /* ######################### Helper Class ######################## */
 
     /**
-     *
+     * Helper thread that reads input from ViewProxy output stream.
      */
     private class ReaderThread extends Thread {
+
+        /**
+         * When the thread is started it will receive
+         * input from ViewProxy output stream and update the view.
+         */
         public void run() {
             int header, pn, sp, np;
             String name;
 
             try {
                 while(true) {
+
                     header = in.readByte();
+
+                    // Create storage variables.
+                    // Get input while not -1 Byte.
+                    // Send piles to newGame.
                     switch (header) {
-                        case 'N':
-                            // Create storage variables.
+                        case 'N' -> {
+
                             ArrayList<Integer> piles = new ArrayList<>();
                             int val = in.readByte();
 
-                            // Get input while not -1 Byte.
-                            while(val != -1) {
+                            while (val != -1) {
                                 piles.add(val);
                                 val = in.readByte();
                             }
 
-                            // Send piles to newGame.
                             listener.newGame(piles);
-                        case 'R': listener.updatePile(in.readByte(), in.readByte(), in.readByte());
-                        case 'W': listener.waitingForOpponent();
-                        case 'Y': listener.yourTurn();
-                        case 'O': listener.otherTurn();
-                        case 'U': listener.youWin();
-                        case 'L': listener.otherWin();
-                        case 'Q': listener.quit();
-                        default:
+                        }
+                        case 'R' -> listener.updatePile(
+                                in.readByte(),
+                                in.readByte(),
+                                in.readByte());
+                        case 'W' -> listener.waitingForOpponent();
+                        case 'Y' -> listener.yourTurn();
+                        case 'O' -> {
+                            String oUser = in.readUTF();
+                            listener.opponentTurn(oUser);
+                        }
+                        case 'U' -> listener.youWin();
+                        case 'L' -> listener.opponentWin(in.readUTF());
+                        case 'H' -> {
+                            listener.help(in.readUTF());
+                        }
+                        case 'E' -> {
+                            listener.error(in.readUTF());
+                        }
+                        case 'Q' -> {
+                            listener.quit();
+                            socket.close();
+                        }
+                        default -> {
                             System.err.println("Bad Message.");
                             System.exit(1);
+                        }
                     }
                 }
+
             } catch (IOException e) {
                 handleErrorMessage(e.getMessage());
             } finally {
                 try {
                     socket.close();
-                } catch (IOException e) {
-                    handleErrorMessage(e.getMessage());
-                }
+                } catch (IOException ignored) { }
             }
 
         } // end run.

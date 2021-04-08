@@ -19,11 +19,13 @@ public interface ModelListener {
 
     /**
      * Report new game started.
+     *
+     * @param piles initial piles.
      */
     void newGame(ArrayList<Integer> piles);
 
     /**
-     * Report that a piles were updated.
+     * Report that piles were updated.
      *
      * @param pn pile index ( 0 based ).
      * @param sp start pin index ( 0 based ).
@@ -43,8 +45,10 @@ public interface ModelListener {
 
     /**
      * Report that is it the other players turn.
+     *
+     * @param name name of player taking turn.
      */
-    void otherTurn();
+    void opponentTurn(String name);
 
     /**
      * Report that you won.
@@ -52,14 +56,21 @@ public interface ModelListener {
     void youWin();
 
     /**
-     * Report that the other player won.
+     * Report that the opponent won.
+     *
+     * @param name name of player who won.
      */
-    void otherWin();
+    void opponentWin(String name);
 
     /**
-     * Report that the game ended in a draw.
+     * Report that an error occurred.
      */
-    void draw();
+    void error(String msg);
+
+    /**
+     * Report player wants help msg.
+     */
+    void help(String msg);
 
     /**
      * Report that a player left.

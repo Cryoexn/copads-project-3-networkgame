@@ -7,8 +7,6 @@
 //
 //*******************************************************************
 
-import java.util.ArrayList;
-
 /**
  * Interface to be implemented by an object that takes reports from
  * the View in a Nim game.
@@ -40,7 +38,7 @@ public interface ViewListener {
      *
      * @param view Calling view object.
      */
-    void newGame(ModelListener view, ArrayList<Integer> piles);
+    void newGame(ModelListener view);
 
     /**
      * Report that a player has quit.

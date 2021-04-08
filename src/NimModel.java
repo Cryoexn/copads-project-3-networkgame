@@ -30,17 +30,40 @@ public class NimModel implements ViewListener {
     // If the game is finished.
     private boolean isFinished;
 
+    // If verbose mode was selected.
+    private boolean verbose;
+
     // State of the game.
     private GameState gameState;
 
-    public NimModel(ArrayList<Integer> piles) {
+    /**
+     * Constructor to initialize the starting piles
+     * and if verbose output is selected.
+     *
+     * @param piles initial piles.
+     * @param verbose verbose option.
+     */
+    public NimModel(ArrayList<Integer> piles, boolean verbose) {
+
+        name1 = null;
+        name2 = null;
+
+        view1 = null;
+        view2 = null;
+
+        turn = null;
+
+        isFinished = false;
+
         gameState = new GameState(piles);
+
+        this.verbose = verbose;
 
     } // end NimModel.
 
     /**
-     * Check if there is already a player waiting
-     * for a game to start.
+     * Allow players to join and be initialized to the
+     * correct player slot based on their arrival.
      *
      * @param view Calling view object.
      * @param username Name of player.
@@ -57,9 +80,10 @@ public class NimModel implements ViewListener {
             view1.waitingForOpponent();
 
         } else {
-
             name2 = username;
             view2 = view;
+
+            logMsg(String.format("%s vs. %s  start game.\n", name1, name2));
 
             // Once both players are in start a Game with default values.
             startGame(gameState.INITIAL_PILES);
@@ -78,16 +102,11 @@ public class NimModel implements ViewListener {
     @Override
     public synchronized void moveRequest(ModelListener view,
                                          int pn, int sp, int np) {
-
         // check if the player who make the move is up.
-        if (view != turn) {
+        if (view == turn) {
 
-            // Check which player made the move.
-            if (view == view1) {
-                makeMove(view1, pn, sp, np);
-            } else {
-                makeMove(view2, pn, sp, np);
-            }
+            // Make move for player that is up.
+            makeMove(turn, pn, sp, np);
         }
 
     } // end moveRequest.
@@ -98,28 +117,16 @@ public class NimModel implements ViewListener {
      * @param view Calling view object.
      */
     @Override
-    public synchronized void newGame(ModelListener view, ArrayList<Integer> piles) {
+    public synchronized void newGame(ModelListener view) {
 
         // Check that there is still a second player.
         if(name2 != null) {
-            if(piles == null) {
 
-                // Initialize piles.
-                piles = new ArrayList<>();
+            logMsg(String.format("%s vs. %s  start game.\n", name1, name2));
+            logMsg(String.format("%s vs. %s  restarting game.\n", name1, name2));
 
-                // Add default pile values.
-                piles.add(3);
-                piles.add(4);
-                piles.add(5);
-
-                // Start the game with default values.
-                startGame(piles);
-
-            } else {
-
-                // Start the game with initial values.
-                startGame(piles);
-            }
+            // Start the game with initial values.
+            startGame(gameState.INITIAL_PILES);
         }
 
     } // end newGame.
@@ -131,23 +138,48 @@ public class NimModel implements ViewListener {
      */
     @Override
     public synchronized void quit(ModelListener view) {
+
+        // If the client hasn't quit
         if(view1 != null) {
+
+            // Tell them to quit.
             view1.quit();
+            view1 = null;
         }
 
+        // If the client hasn't quit
         if(view2 != null) {
+
+            // Tell them to quit.
             view2.quit();
+            view2 = null;
+            logMsg(String.format("%s vs. %s  ending game\n", name1, name2));
         }
 
+        // Update variable to signify quit.
         turn = null;
         isFinished = true;
 
     } // end quit.
 
+    /**
+     * Pass along the help message to the ViewProxy.
+     *
+     * @param view Calling view object.
+     */
     @Override
-    public synchronized void help(ModelListener view) {
+    public void help(ModelListener view) {
+        // Constant help message.
+        final String HELP_MSG = "" +
+                "Command  Example/Description\n" +
+                "q        quit the game\n" +
+                "n        request new restarted game\n" +
+                "p# i# q# remove q# pins starting at index i# from pile p#\n" +
+                "Commands use 0-based indexing.\n";
 
-    }
+        view.help(HELP_MSG);
+
+    } // end help.
 
     /**
      * Check if the game has finished.
@@ -164,11 +196,13 @@ public class NimModel implements ViewListener {
 
     /**
      * Start a new game of Nim and let players know.
+     *
+     * @param piles initial value of piles to start.
      */
     private void startGame(ArrayList<Integer> piles) {
 
-        // Clear the piles.
-        this.gameState.clearPiles();
+        // Set Piles.
+        this.gameState.setInitialPiles(piles);
 
         // Notify players of the new game.
         view1.newGame(piles);
@@ -179,7 +213,7 @@ public class NimModel implements ViewListener {
 
         // Notify players of the turns.
         view1.yourTurn();
-        view2.otherTurn();
+        view2.opponentTurn(name1);
 
     } // end startGame.
 
@@ -193,45 +227,76 @@ public class NimModel implements ViewListener {
      */
     private void makeMove(ModelListener view, int pn, int sp, int np) {
 
-        // Update the game state with move.
-        gameState.updatePiles(pn, sp, np);
+        try {
 
-        // Notify player of the gameState update.
-        view1.updatePile(pn, sp, np);
-        view2.updatePile(pn, sp, np);
+            // Update the game state with move.
+            gameState.updatePiles(pn, sp, np);
 
-        // Check if its player1s turn.
-        boolean isPlayerOnesTurn = (view == view1);
+            logMsg(String.format("%s vs. %s new state:%s\n",
+                    name1, name2, gameState.toString()));
 
-        // See if the game is over.
-        if (gameState.arePilesEmpty()) {
+            // Notify player of the gameState update.
+            view1.updatePile(pn, sp, np);
+            view2.updatePile(pn, sp, np);
 
-            // Current player loses.
-            turn = null;
+            // Check if its player1s turn.
+            boolean isPlayerOnesTurn = (view == view1);
 
-            // If the current player is player1.
-            if(isPlayerOnesTurn) {
-                view1.otherWin();
-                view2.youWin();
+            // See if the game is over.
+            if (gameState.arePilesEmpty()) {
+
+                // Current player loses.
+                turn = null;
+
+                // If the current player is player1.
+                if (isPlayerOnesTurn) {
+                    view1.opponentWin(name2);
+                    view2.youWin();
+                } else {
+                    view1.youWin();
+                    view2.opponentWin(name1);
+                }
+
+                isFinished = true;
+
+                logMsg(String.format("%s vs. %s  ending game\n",
+                        name1, name2));
+
             } else {
-                view1.youWin();
-                view2.otherWin();
+
+                if (isPlayerOnesTurn) {
+                    turn = view2;
+                    view1.opponentTurn(name2);
+                    view2.yourTurn();
+                    logMsg(String.format("%s vs. %s whose turn: %s\n",
+                            name1, name2, name2));
+                } else {
+                    turn = view1;
+                    view1.yourTurn();
+                    view2.opponentTurn(name1);
+                    logMsg(String.format("%s vs. %s whose turn: %s\n",
+                            name1, name2, name1));
+                }
             }
 
-            isFinished = true;
-
-        } else {
-            if (isPlayerOnesTurn) {
-                turn = view2;
-                view1.otherTurn();
-                view2.yourTurn();
-            } else {
-                turn = view1;
-                view1.yourTurn();
-                view2.otherTurn();
-            }
+        } catch (Exception e) {
+            if (turn != null)
+                turn.error(e.getMessage());
         }
 
     } // end makeMove.
+
+    /**
+     * If verbose option is true.
+     * log messages to System.out with no new line added.
+     *
+     * @param msg message to log.
+     */
+    private void logMsg(String msg) {
+
+        if (verbose)
+            System.out.print(msg);
+
+    } // end logMsg.
 
 } // end NimModel.
