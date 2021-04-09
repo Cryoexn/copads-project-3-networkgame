@@ -161,6 +161,8 @@ public class NimServer {
             p.add(Integer.parseInt(args[i]));
         }
 
+        p.removeIf(filter -> filter == 0);
+
         if (p.size() == 0) {
             p.add(3);
             p.add(4);
